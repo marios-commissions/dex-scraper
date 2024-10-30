@@ -27,7 +27,7 @@ function Stats() {
 	const [added, setAdded] = useState<null | { added: number, remaining: number; }>(null);
 	const [error, setError] = useState<Error | null>(null);
 	const { on, off, addWallets } = useData();
-	const { approved, clear } = useApproval();
+	const { approved } = useApproval();
 
 	useEffect(() => {
 		function onReceiveData({ data }: { data: Data; }) {
