@@ -1,5 +1,5 @@
 export const AddressRegex = {
-	EVM: /0x[a-fA-F0-9]{40}/,
+	Ethereum: /0x[a-fA-F0-9]{40}/,
 	Solana: /[1-9A-HJ-NP-Za-km-z]{32,44}/
 };
 
