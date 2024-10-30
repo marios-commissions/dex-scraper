@@ -37,11 +37,13 @@ interface AddWalletsResponse {
 	error?: string;
 	uuid?: string;
 	completed?: boolean;
-	data?: {
-		added: number;
-		remaining: number;
-		completed?: string[];
-	};
+	data?: AddWalletsResponseData;
+}
+
+export interface AddWalletsResponseData {
+	added: Record<string, string>;
+	remaining: number;
+	errors: Record<string, string>;
 }
 
 interface ScrapeResponse {

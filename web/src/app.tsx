@@ -1,3 +1,5 @@
+import '@fontsource/inter';
+
 import { useState } from 'react';
 
 import useApproval from './hooks/use-approval';
@@ -21,7 +23,7 @@ function App() {
 	}
 
 	return <div className='dark:bg-stone-950 p-4 dark:text-white flex flex-col gap-6 w-full h-full justify-center items-center min-h-dvh'>
-		<p className='text-4xl font-semibold'>Top Trader Scraper</p>
+		<p className='text-4xl font-semibold'>Wallet Adder</p>
 		<span className='flex flex-col gap-2 items-center'>
 			{address !== '' && isAddressValid === false && <span className='dark:text-red-400 text-red-500'>Invalid Address!</span>}
 			{address !== '' && addressType && <span className='dark:text-green-400 text-green-500'>Detected Address Type: {addressType!}</span>}

@@ -56,19 +56,25 @@ async function onRequestAddressData(socket: WebSocket, address: string) {
 }
 
 async function onAddToWallet(socket: WebSocket, uuid: string, wallets: string[], fromCoin: string) {
-	let completed = [];
+	let completed = {};
+	let errors = {};
 
 	for (const wallet of wallets) {
-		const result = await addWallet(wallet, `${fromCoin} ${completed.length + 1}`);
-		if (result.success) completed.push(`${fromCoin} ${completed.length + 1}`);
+		const name = `${fromCoin} ${Object.keys(completed).length + 1}`;
+
+		const result = await addWallet(wallet, name);
+
+		if (result.success) completed[wallet] = name;
+		if (result.error) errors[wallet] = result.error;
 
 		send(socket, {
 			type: DispatchTypes.ADD_WALLETS_UPDATE,
 			completed: false,
 			uuid,
 			data: {
-				added: completed.length,
-				remaining: wallets.length - completed.length
+				added: completed,
+				remaining: wallets.length - Object.keys(completed).length,
+				errors
 			}
 		});
 	}
@@ -78,9 +84,9 @@ async function onAddToWallet(socket: WebSocket, uuid: string, wallets: string[],
 		completed: true,
 		uuid,
 		data: {
-			completed: completed,
-			added: completed.length,
-			remaining: wallets.length - completed.length
+			added: completed,
+			remaining: wallets.length - Object.keys(completed).length,
+			errors
 		}
 	});
 }

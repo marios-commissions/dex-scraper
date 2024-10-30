@@ -10,36 +10,40 @@ import PNL from './pnl';
 
 interface AccordionProps {
 	address: string;
+	index: number;
 }
 
 function Accordion(props: AccordionProps) {
 	const { approved, approve, disapprove } = useApproval();
+	const [viewed, setViewed] = useState(false);
 	const [open, setOpen] = useState(false);
 
 	return <div
 		role='button'
 		key={props.address}
-		onClick={() => setOpen(!open)}
-		className='bg-neutral-800 w-full h-full flex flex-col gap-2 px-2 py-1 rounded-lg'
-	>
-		<div className='flex items-center gap-4'>
-			<div className='flex items-center gap-2'>
-				<button
-					className={cn('bg-green-600 p-1 px-3 text-center rounded-full', approved.includes(props.address) && 'bg-red-500')}
-					onClick={(e) => {
-						e.stopPropagation();
+		className={cn('bg-neutral-800 w-full h-full flex flex-col gap-2 p-4 rounded-lg', viewed && 'opacity-60')}
+		onClick={() => {
+			if (!viewed && open) setViewed(true);
 
-						if (approved.includes(props.address)) {
-							disapprove(props.address);
-						} else {
-							approve(props.address);
-						}
-					}}
-				>
-					{approved.includes(props.address) ? 'Disapprove' : 'Approve'}
-				</button>
-			</div>
-			<span>{props.address}</span>
+			setOpen(!open);
+		}}
+	>
+		<div className='flex gap-2'>
+			<span><b>#{props.index + 1}</b> - {(props.address)}</span>
+			<button
+				className={cn('bg-green-600 p-1 px-3 text-center rounded-full', approved.includes(props.address) && 'bg-red-500')}
+				onClick={(e) => {
+					e.stopPropagation();
+
+					if (approved.includes(props.address)) {
+						disapprove(props.address);
+					} else {
+						approve(props.address);
+					}
+				}}
+			>
+				{approved.includes(props.address) ? 'Disapprove' : 'Approve'}
+			</button>
 		</div>
 		{open && <div className='w-full h-0.5 dark:bg-white/5 bg-black/5' />}
 		{open && <AccordionContent {...props} />}
