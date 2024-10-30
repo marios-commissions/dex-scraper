@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import useApproval from './hooks/use-approval';
 import { AddressRegex } from './constants';
 import useData from './hooks/use-data';
 import Stats from './components/stats';
@@ -11,6 +12,7 @@ function App() {
 	const [isSending, setIsSending] = useState<boolean>(false);
 	const [address, setAddress] = useState<string>('');
 	const { connected, requestScraping } = useData();
+	const { clear } = useApproval();
 
 	if (!connected) {
 		return <div className='dark:bg-stone-950 dark:text-white flex flex-col gap-6 w-full h-full justify-center items-center min-h-dvh'>
@@ -55,6 +57,7 @@ function App() {
 			className='dark:bg-blue-400 font-semibold dark:border-stone-800 border px-6 py-2 rounded-full disabled:opacity-60 disabled:pointer-events-none'
 			disabled={!connected || isSending}
 			onClick={async () => {
+				clear();
 				setIsSending(true);
 				await requestScraping(address, addressType as keyof typeof AddressRegex);
 				setIsSending(false);

@@ -19,7 +19,7 @@ const waitForXPath = async (browser: Hero, selector: string, maxWaitTime = 10000
 		}
 
 		// Try to find the selector
-		browser.xpathSelector(selector, true).then(res => {
+		(browser.xpathSelector(selector, true) as any).then(res => {
 			if (res) {
 				resolve(res); // Found the selector
 			} else {

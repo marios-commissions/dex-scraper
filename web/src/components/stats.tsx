@@ -87,7 +87,6 @@ function Stats() {
 
 				setResults({ data: null });
 				setError(null);
-				// clear();
 			}}
 		>
 			{adding ? `Adding... (${adding.completed}/${adding.completed + adding.remaining})` : 'Add Approved to Cielo'}
