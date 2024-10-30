@@ -1,5 +1,3 @@
-import '@fontsource/inter';
-
 import { useState } from 'react';
 
 import useApproval from './hooks/use-approval';
