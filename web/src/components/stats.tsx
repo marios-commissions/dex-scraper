@@ -47,7 +47,7 @@ function Stats() {
 
 	if (added) {
 		return <div className='flex items-center gap-2 p-2 rounded-full bg-green-500 dark:bg-green-40'>
-			<span>Added {added.added} wallets ({added.remaining} failed)</span>
+			<span>Added {added.added} wallets ({added.remaining} failed) (Added: {added.completed.join(', ')})</span>
 			<X onClick={() => setAdded(null)} size={18} role='button' className='ml-auto hover:opacity-60 transition-opacity duration-250' />
 		</div>;
 	}
