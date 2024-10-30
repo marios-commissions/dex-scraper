@@ -40,6 +40,7 @@ interface AddWalletsResponse {
 	data?: {
 		added: number;
 		remaining: number;
+		completed?: string[];
 	};
 }
 

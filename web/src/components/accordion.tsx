@@ -22,9 +22,8 @@ function Accordion(props: AccordionProps) {
 		onClick={() => setOpen(!open)}
 		className='bg-neutral-800 w-full h-full flex flex-col gap-2 px-2 py-1 rounded-lg'
 	>
-		<div className='flex items-center'>
-			<span>{props.address}</span>
-			<div className='ml-auto flex items-center gap-2'>
+		<div className='flex items-center gap-4'>
+			<div className='flex items-center gap-2'>
 				<button
 					className={cn('bg-green-600 p-1 px-3 text-center rounded-full', approved.includes(props.address) && 'bg-red-500')}
 					onClick={(e) => {
@@ -40,6 +39,7 @@ function Accordion(props: AccordionProps) {
 					{approved.includes(props.address) ? 'Disapprove' : 'Approve'}
 				</button>
 			</div>
+			<span>{props.address}</span>
 		</div>
 		{open && <div className='w-full h-0.5 dark:bg-white/5 bg-black/5' />}
 		{open && <AccordionContent {...props} />}

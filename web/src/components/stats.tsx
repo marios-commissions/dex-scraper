@@ -23,8 +23,8 @@ interface Data {
 
 function Stats() {
 	const [results, setResults] = useState<{ data: { wallets: Wallet[], token: string; } | null; }>({ data: null });
-	const [adding, setAdding] = useState<null | { completed: number; remaining: number; }>(null);
-	const [added, setAdded] = useState<null | { added: number, remaining: number; }>(null);
+	const [added, setAdded] = useState<null | { added: number; completed: string[]; remaining: number; }>(null);
+	const [adding, setAdding] = useState<null | { added: number; remaining: number; }>(null);
 	const [error, setError] = useState<Error | null>(null);
 	const { on, off, addWallets } = useData();
 	const { approved } = useApproval();
@@ -70,26 +70,29 @@ function Stats() {
 			className='w-full px-4 mt-4 py-2 bg-green-500 rounded-lg'
 			disabled={adding !== null}
 			onClick={async () => {
-				setAdding({ completed: 0, remaining: approved.length });
+				setAdding({ added: 0, remaining: approved.length });
 
 				const dispatch = await addWallets(results.data!.token, approved, (data) => {
-					setAdding({ completed: data!.added, remaining: data!.remaining });
+					setAdding({ added: data!.added, remaining: data!.remaining });
 				});
 
 				setAdding(null);
 
-				console.log(dispatch);
 				if (dispatch.error) {
 					return setError(new Error(dispatch.error));
 				}
 
-				setAdded({ added: dispatch.data!.added, remaining: dispatch.data!.remaining });
+				setAdded({
+					added: dispatch.data!.added,
+					remaining: dispatch.data!.remaining,
+					completed: dispatch.data!.completed!
+				});
 
 				setResults({ data: null });
 				setError(null);
 			}}
 		>
-			{adding ? `Adding... (${adding.completed}/${adding.completed + adding.remaining})` : 'Add Approved to Cielo'}
+			{adding ? `Adding... (${adding.added}/${adding.added + adding.remaining})` : 'Add Approved to Cielo'}
 		</button>}
 	</div>;
 }
