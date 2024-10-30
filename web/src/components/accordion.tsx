@@ -80,7 +80,7 @@ function AccordionContent(props: AccordionProps) {
 		}
 	}, []);
 
-	const items = useMemo(() => data?.sort((a, b) => b.total_pnl_usd - a.total_pnl_usd), [data]);
+	const items = useMemo(() => data?.sort((a, b) => b.roi_percentage - a.roi_percentage), [data]);
 
 	if (error) {
 		return <span className='text-red-500'>
