@@ -30,6 +30,7 @@ function App() {
 			className='rounded-md border-2 placeholder:dark:text-stone-500 w-96 py-2 dark:bg-stone-900 dark:border-stone-800 dark:text-white px-4'
 			placeholder='Coin Address'
 			value={address}
+			disabled={isSending}
 			id='address'
 			onChange={(event) => {
 				const value = event.target.value;

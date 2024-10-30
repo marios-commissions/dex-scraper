@@ -59,8 +59,8 @@ async function onAddToWallet(socket: WebSocket, uuid: string, wallets: string[],
 	let completed = 0;
 
 	for (const wallet of wallets) {
-		await addWallet(wallet, `${fromCoin} ${completed + 1}`);
-		completed++;
+		const result = await addWallet(wallet, `${fromCoin} ${completed + 1}`);
+		if (result.success) completed++;
 
 		send(socket, {
 			type: DispatchTypes.ADD_WALLETS_UPDATE,
