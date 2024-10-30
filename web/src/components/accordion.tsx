@@ -28,7 +28,7 @@ function Accordion(props: AccordionProps) {
 			setOpen(!open);
 		}}
 	>
-		<div className='flex gap-2'>
+		<div className='flex gap-2 items-center'>
 			<span><b>#{props.index + 1}</b> - {(props.address)}</span>
 			<button
 				className={cn('bg-green-600 p-1 px-3 text-center rounded-full', approved.includes(props.address) && 'bg-red-500')}
