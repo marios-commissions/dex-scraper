@@ -1,0 +1,33 @@
+{
+	"$schema": "https://json.schemastore.org/swcrc",
+	"sourceMaps": true,
+	"minify": true,
+	"module": {
+		"type": "commonjs"
+	},
+	"jsc": {
+		"externalHelpers": false,
+		"parser": {
+			"syntax": "typescript",
+			"tsx": true,
+			"decorators": true,
+			"dynamicImport": false
+		},
+		"target": "esnext",
+		"minify": {
+			"compress": true,
+			"mangle": true
+		},
+		"transform": {
+			"react": {
+				"useBuiltins": true
+			}
+		},
+		"baseUrl": "src",
+		"paths": {
+			"~/*": [
+				"*"
+			]
+		}
+	}
+}
