@@ -29,7 +29,6 @@ function Stats() {
 	const [adding, setAdding] = useState<null | { added: number; remaining: number; }>(null);
 	const [added, setAdded] = useState<null | AddWalletsResponseData>(null);
 	const [error, setError] = useState<Error | null>(null);
-	const [viewed, setViewed] = useState<string[]>([]);
 	const { on, off, addWallets } = useData();
 	const { approved } = useApproval();
 
