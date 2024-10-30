@@ -1,0 +1,9 @@
+{
+	"web": {
+		"address": "localhost",
+		"port": 9119
+	},
+	"cielo": {
+		"timeframe": "30d"
+	}
+}
