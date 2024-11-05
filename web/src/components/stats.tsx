@@ -29,11 +29,13 @@ function Stats() {
 	const [adding, setAdding] = useState<null | { added: number; remaining: number; }>(null);
 	const [added, setAdded] = useState<null | AddWalletsResponseData>(null);
 	const [error, setError] = useState<Error | null>(null);
+	const [label, setLabel] = useState<string>('');
 	const { on, off, addWallets } = useData();
 	const { approved } = useApproval();
 
 	useEffect(() => {
 		function onReceiveData({ data }: { data: Data; }) {
+			console.log(data);
 			if (data.error) {
 				return setError(new Error(data.error));
 			} else {
@@ -45,7 +47,10 @@ function Stats() {
 		}
 
 		on(DispatchTypes.SCRAPING_RESPONSE, onReceiveData);
-		return () => off(DispatchTypes.SCRAPING_RESPONSE, onReceiveData);
+
+		return () => {
+			off(DispatchTypes.SCRAPING_RESPONSE, onReceiveData);
+		};
 	}, []);
 
 	if (added) {
@@ -70,21 +75,30 @@ function Stats() {
 	return <div className='w-full'>
 		<div className='h-0.5 w-full dark:bg-white/5 bg-black/5 my-2' />
 		{results.data?.token && <h3 className='text-3xl font-bold mb-4'>Top Traders for "{results.data?.token}"</h3>}
+		{!results.data?.token && <input
+			className={cn('bg-neutral-800 rounded-md p-2 border-2 mb-2', !label && 'border-red-500')}
+			onChange={(e) => setLabel(e.target.value)}
+			placeholder='Enter Coin Name'
+			type='text'
+			required
+		/>}
 		{results?.data?.wallets?.length && <div className='flex flex-col gap-3 items-center justify-center'>
 			{!results.data.wallets?.length && 'No items.'}
 			{!!results.data.wallets?.length && results.data.wallets.map((d, index) => <Accordion index={index} address={d.address} />)}
 		</div>}
 		{approved.length !== 0 && results?.data && <button
-			className='w-full px-4 mt-4 py-2 bg-green-500 rounded-lg'
-			disabled={adding !== null}
+			className='w-full px-4 mt-4 py-2 bg-green-500 rounded-lg disabled:opacity-50'
+			disabled={adding !== null || (!results.data?.token && !label)}
 			onClick={async () => {
 				setAdding({ added: 0, remaining: approved.length });
 
-				const dispatch = await addWallets(results.data!.token, approved, (data) => {
+				const dispatch = await addWallets(results.data!.token ?? label, approved, (data) => {
 					setAdding({ added: Object.keys(data!.added).length, remaining: data!.remaining });
 				});
 
 				setAdding(null);
+
+				if (!dispatch) return;
 
 				if (dispatch.error) {
 					return setError(new Error(dispatch.error));

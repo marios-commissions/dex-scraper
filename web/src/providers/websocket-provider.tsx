@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useEffect, useRef, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
+import createEncodedUUID from '../utilities/create-encoded-uuid';
 import { DispatchTypes, type AddressRegex } from '../constants';
 import config from '../../../config.json';
 import sleep from '../utilities/sleep';
@@ -46,11 +46,23 @@ export interface AddWalletsResponseData {
 	errors: Record<string, string>;
 }
 
-interface ScrapeResponse {
-	success: boolean;
-	error?: string;
-	data?: { items: Token[]; };
+interface Wallet {
+	url: string;
+	address: string;
 }
+
+type ScrapeResponse = {
+	success: boolean;
+	data: {
+		token: any;
+		wallets: Wallet[];
+	};
+	error?: undefined;
+} | {
+	success: boolean;
+	error: any;
+	data?: undefined;
+};
 
 interface Dispatch {
 	type: DispatchTypes;
@@ -68,9 +80,10 @@ type DataProviderState = {
 	ws: WebSocket | null;
 	connected: boolean;
 	send: (data: Record<any, any> | any[]) => void;
-	addWallets: (fromCoin: string, wallets: string[], onProgress: null | ((data: AddWalletsResponse['data']) => any), throwError?: boolean) => Promise<AddWalletsResponse>;
-	requestScraping: (address: string, type: keyof typeof AddressRegex, throwError?: boolean) => Promise<ScrapeResponse>;
-	requestAddressData: (address: string, throwError?: boolean) => Promise<AddressDataResponse>;
+	emit: (type: DispatchTypes, payload: any) => void;
+	addWallets: (fromCoin: string, wallets: string[], onProgress: null | ((data: AddWalletsResponse['data']) => any), throwError?: boolean) => Promise<AddWalletsResponse | null>;
+	requestScraping: (address: string, type: keyof typeof AddressRegex, throwError?: boolean) => Promise<ScrapeResponse | null>;
+	requestAddressData: (address: string, throwError?: boolean) => Promise<AddressDataResponse | null>;
 	on: (type: DispatchTypes, callback: (...args: any[]) => any) => void;
 	once: (type: DispatchTypes, callback: (...args: any[]) => any) => void;
 	off: (type: DispatchTypes, callback: (...args: any[]) => any) => void;
@@ -81,18 +94,21 @@ const initial = {
 	ws: null,
 	connected: false,
 	send: () => void 0,
-	addWallets: (): Promise<AddWalletsResponse> => Promise.resolve({ success: false, error: 'Not initialized.' }),
-	requestScraping: (): Promise<ScrapeResponse> => Promise.resolve({ success: false, error: 'Not initialized.' }),
-	requestAddressData: (): Promise<AddressDataResponse> => Promise.resolve({ success: false, error: 'Not initialized.' }),
+	emit: () => void 0,
+	addWallets: (): Promise<AddWalletsResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
+	requestScraping: (): Promise<ScrapeResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
+	requestAddressData: (): Promise<AddressDataResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
 	waitForDispatch: (): Promise<unknown> => Promise.resolve(),
 	on: () => void 0,
 	once: () => void 0,
 	off: () => void 0,
 };
 
-const listeners = new Map<PropertyKey, Set<(...args: any[]) => any>>();
 
 export const DataProviderContext = createContext<DataProviderState>(initial);
+
+const listeners = new Map<PropertyKey, Set<(...args: any[]) => any>>();
+const pendingRequests = new Set();
 
 function DataProvider({ children, ...props }: DataProviderProps) {
 	const [connected, setIsConnected] = useState<boolean>(false);
@@ -101,6 +117,18 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 	const send = useCallback((data: Record<any, any> | any[]) => {
 		const payload = JSON.stringify(data);
 		ws.current?.send(payload);
+	}, []);
+
+	const emit = useCallback((type: DispatchTypes, payload: any) => {
+		const callbacks = listeners.get(type);
+
+		for (const callback of callbacks ?? []) {
+			try {
+				callback(payload);
+			} catch (error) {
+				console.error(`Failed to run callback for ${DispatchTypes[type]} event:`, error);
+			}
+		}
 	}, []);
 
 	const on = useCallback((type: DispatchTypes, callback: (...args: any[]) => any) => {
@@ -113,6 +141,7 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 			listeners.set(type, map);
 		}
 	}, []);
+
 
 	const once = useCallback((type: DispatchTypes, callback: (...args: any[]) => any) => {
 		function onCallback(...args: any[]) {
@@ -147,12 +176,19 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 		});
 	}, []);
 
-	const requestScraping = useCallback(async (address: string, addressType: keyof typeof AddressRegex, throwError: boolean = false): Promise<ScrapeResponse> => {
+	const requestScraping = useCallback(async (address: string, addressType: keyof typeof AddressRegex, throwError: boolean = false): Promise<ScrapeResponse | null> => {
 		if (!ws.current) return { success: false, error: 'Not connected.' };
 
-		send({ type: DispatchTypes.REQUEST_SCRAPING, address, addressType });
+		const uuid = createEncodedUUID(DispatchTypes.REQUEST_SCRAPING, address, addressType);
+		if (pendingRequests.has(uuid)) return null;
 
-		const dispatch = await waitForDispatch(DispatchTypes.SCRAPING_RESPONSE);
+		send({ type: DispatchTypes.REQUEST_SCRAPING, uuid, address, addressType });
+
+		pendingRequests.add(uuid);
+
+		const dispatch = await waitForDispatch(DispatchTypes.SCRAPING_RESPONSE, (dispatch) => dispatch.uuid === uuid);
+
+		pendingRequests.delete(uuid);
 
 		if (throwError && dispatch.data.error) {
 			throw new Error(dispatch.data.error);
@@ -161,26 +197,37 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 		return dispatch.data as ScrapeResponse;
 	}, [ws]);
 
-	const requestAddressData = useCallback(async (address: string, throwError: boolean = false): Promise<AddressDataResponse> => {
+	const requestAddressData = useCallback(async (address: string, throwError: boolean = false): Promise<AddressDataResponse | null> => {
 		if (!ws.current) return { success: false, error: 'Not connected.' };
 
-		send({ type: DispatchTypes.REQUEST_ADDRESS_DATA, address });
+		const uuid = createEncodedUUID(DispatchTypes.REQUEST_ADDRESS_DATA, address);
+		if (pendingRequests.has(uuid)) return null;
 
-		const dispatch = await waitForDispatch(DispatchTypes.ADDRESS_DATA_RESPONSE, (dispatch) => dispatch.address === address);
+		send({ type: DispatchTypes.REQUEST_ADDRESS_DATA, uuid, address });
+
+		pendingRequests.add(uuid);
+
+		const dispatch = await waitForDispatch(DispatchTypes.ADDRESS_DATA_RESPONSE, (dispatch) => dispatch.uuid === uuid && dispatch.address === address);
+
+		pendingRequests.delete(uuid);
 
 		if (throwError && dispatch.data.error) {
 			throw new Error(dispatch.data.error);
 		}
 
+		console.log(dispatch.data);
 		return dispatch.data as AddressDataResponse;
 	}, [ws]);
 
-	const addWallets = useCallback(async (fromCoin: string, wallets: string[], onProgress: null | ((data: AddWalletsResponse['data']) => any), throwError?: boolean): Promise<AddWalletsResponse> => {
+	const addWallets = useCallback(async (fromCoin: string, wallets: string[], onProgress: null | ((data: AddWalletsResponse['data']) => any), throwError?: boolean): Promise<AddWalletsResponse | null> => {
 		if (!ws.current) return { success: false, error: 'Not connected.' };
 
-		const uuid = uuidv4();
+		const uuid = createEncodedUUID(DispatchTypes.ADD_WALLETS, fromCoin, wallets);
+		if (pendingRequests.has(uuid)) return null;
 
 		send({ type: DispatchTypes.ADD_WALLETS, uuid, wallets, fromCoin });
+
+		pendingRequests.add(uuid);
 
 		const dispatch = await waitForDispatch(DispatchTypes.ADD_WALLETS_UPDATE, (dispatch) => {
 			if (dispatch.uuid !== uuid) return;
@@ -193,6 +240,8 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 
 			return dispatch.completed === true;
 		});
+
+		pendingRequests.delete(uuid);
 
 		if (throwError && dispatch.data.error) {
 			throw new Error(dispatch.data.error);
@@ -210,6 +259,7 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 		waitForDispatch,
 
 		send,
+		emit,
 		requestScraping,
 		requestAddressData,
 		addWallets,
@@ -248,14 +298,7 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 				try {
 					const payload = JSON.parse(event.data);
 
-					const callbacks = listeners.get(payload.type);
-					for (const callback of callbacks ?? []) {
-						try {
-							callback(payload);
-						} catch (error) {
-							console.error(`Failed to run callback for ${DispatchTypes[payload.type]} event:`, error);
-						}
-					}
+					emit(payload.type, payload);
 				} catch (e) {
 					console.error('!!! Failed parsing WebSocket message !!!');
 				}

@@ -9,10 +9,10 @@
 		"start": "node dist/index.js"
 	},
 	"devDependencies": {
-		"@swc/cli": "0.4.1-nightly.20240914",
-		"@swc/core": "^1.7.40",
-		"@types/node": "^22.8.1",
-		"@types/ws": "^8.5.12"
+		"@swc/cli": "0.5.0",
+		"@swc/core": "^1.8.0",
+		"@types/node": "^22.9.0",
+		"@types/ws": "^8.5.13"
 	},
 	"dependencies": {
 		"@ulixee/hero": "^2.0.0-alpha.30"

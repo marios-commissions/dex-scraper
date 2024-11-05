@@ -13,7 +13,6 @@ const container = document.getElementById('root')!;
 const queryClient = new QueryClient();
 
 createRoot(container).render(
-	// <StrictMode>
 	<ApprovalProvider>
 		<DataProvider>
 			<QueryClientProvider client={queryClient}>
@@ -21,5 +20,4 @@ createRoot(container).render(
 			</QueryClientProvider>
 		</DataProvider>
 	</ApprovalProvider>
-	// </StrictMode>
 );

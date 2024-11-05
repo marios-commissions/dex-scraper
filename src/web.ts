@@ -16,11 +16,11 @@ ws.on('connection', (socket: WebSocket) => {
 
 			switch (payload.type) {
 				case DispatchTypes.REQUEST_SCRAPING: {
-					onRequestScraping(socket, payload.address, payload.addressType);
+					onRequestScraping(socket, payload.uuid, payload.address, payload.addressType);
 				} break;
 
 				case DispatchTypes.REQUEST_ADDRESS_DATA: {
-					onRequestAddressData(socket, payload.address);
+					onRequestAddressData(socket, payload.uuid, payload.address);
 				} break;
 
 				case DispatchTypes.ADD_WALLETS: {
@@ -43,16 +43,25 @@ ws.on('listening', () => {
 	console.info(`WebSocket server listening on port ${config.web.port}`);
 });
 
-async function onRequestScraping(socket: WebSocket, address: string, addressType: string) {
+async function onRequestScraping(socket: WebSocket, uuid: string, address: string, addressType: string) {
 	const data = await scrape(address, addressType);
 
-	send(socket, { type: DispatchTypes.SCRAPING_RESPONSE, data });
+	send(socket, {
+		type: DispatchTypes.SCRAPING_RESPONSE,
+		uuid,
+		data
+	});
 }
 
-async function onRequestAddressData(socket: WebSocket, address: string) {
+async function onRequestAddressData(socket: WebSocket, uuid: string, address: string) {
 	const data = await getWalletPNL(address);
 
-	send(socket, { type: DispatchTypes.ADDRESS_DATA_RESPONSE, address, data });
+	send(socket, {
+		type: DispatchTypes.ADDRESS_DATA_RESPONSE,
+		uuid,
+		address,
+		data
+	});
 }
 
 async function onAddToWallet(socket: WebSocket, uuid: string, wallets: string[], fromCoin: string) {

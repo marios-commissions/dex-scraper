@@ -60,9 +60,6 @@ export async function scrape(address: string, addressType: string) {
 
 		console.log('Cloudflare Bypassed');
 
-
-		const { document } = browser;
-
 		// Fix fetch bug?
 		await browser.waitForPaintingStable();
 		await browser.waitForMillis(1000);

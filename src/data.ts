@@ -1,16 +1,26 @@
 import credentials from '~/../credentials.json';
 import { CieloBaseURL } from '~/constants';
+import sleep from '~/utilities/sleep';
 import config from '~/../config.json';
 
 
 export async function getWalletPNL(wallet: string) {
 	try {
-		// console.log(wallet);
 		const response = await fetch(CieloBaseURL + `${wallet}/pnl/tokens?timeframe=${config.cielo.timeframe}`, {
 			headers: {
 				'X-Api-Key': credentials.cieloApiKey
 			}
 		});
+
+		if (response.status === 429) {
+			const rateLimitReset = response.headers.get('X-Rate-Limit-Reset');
+			const delay = Number(rateLimitReset) - Date.now();
+
+			console.log(`Ratelimit hit while fetching PNL for ${wallet}, waiting ${delay}ms.`);
+			await sleep(delay);
+
+			return getWalletPNL(wallet);
+		}
 
 		const json = await response.json();
 
@@ -36,6 +46,16 @@ export async function addWallet(wallet: string, label: string) {
 				'X-Api-Key': credentials.cieloApiKey
 			}
 		});
+
+		if (response.status === 429) {
+			const rateLimitReset = response.headers.get('X-Rate-Limit-Reset');
+			const delay = Number(rateLimitReset) - Date.now();
+
+			console.log(`Ratelimit hit while attempting to track ${wallet} as ${label}, waiting ${delay}ms.`);
+			await sleep(delay);
+
+			return addWallet(wallet, label);
+		}
 
 		const json = await response.json();
 

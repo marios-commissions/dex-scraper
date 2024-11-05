@@ -1,6 +1,6 @@
 export const AddressRegex = {
 	Ethereum: /0x[a-fA-F0-9]{40}/,
-	Solana: /[1-9A-HJ-NP-Za-km-z]{32,44}/
+	Solana: /^[1-9A-HJ-NP-Za-z]{32,44}$/
 };
 
 export enum DispatchTypes {
@@ -12,3 +12,8 @@ export enum DispatchTypes {
 	ADD_WALLETS,
 	ADD_WALLETS_UPDATE
 }
+
+export const URLs = {
+	solana: 'https://solscan.io/token/',
+	ethereum: 'https://etherscan.io/address/'
+};

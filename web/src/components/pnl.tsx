@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp } from 'lucide-react';
 
 import type { Token } from '../providers/websocket-provider';
+import { URLs } from '../constants';
 import cn from '../utilities/cn';
 
 
@@ -12,23 +13,24 @@ function PNL({ token }: PNLProps) {
 	if (!token.total_pnl_usd) return null;
 
 	return (
-		<a target='_blank' onClick={(e) => e.stopPropagation()} href={`https://dexscreener.com/${token.chain}/${token.token_address}`} className='grid grid-cols-[200px_1fr_20px] gap-1 relative py-2 items-center font-semibold bg-neutral-700/90 px-2 rounded-lg h-full'>
+		<a
+			target='_blank'
+			onClick={(e) => e.stopPropagation()}
+			href={URLs[token.chain as keyof typeof URLs] && (URLs[token.chain as keyof typeof URLs] + token.token_address)}
+			className='grid grid-cols-[200px_1fr_20px] gap-1 relative py-2 items-center font-semibold bg-neutral-700/90 px-2 rounded-lg h-full'
+		>
 			<div className='flex items-center gap-3'>
-				<button type='button' className='focus:outline-none text-left' data-rac=''>
+				<button type='button' className='focus:outline-none text-left' tabIndex={-1} data-rac=''>
 					<div className='relative'>
 						<div
 							className='hover:outline-stroke w-[40px] h-[40px] rounded-full bg-no-repeat bg-contain cursor-pointer bg-stroke outline outline-transparent'
-							style={{
-								backgroundImage: `url(https://logos.uniwhales.io/${encodeURIComponent(
-									token.chain
-								)}/${encodeURIComponent(token.token_address)}.jpg)`,
-							}}
+							style={{ backgroundImage: `url(https://logos.uniwhales.io/${encodeURIComponent(token.chain)}/${encodeURIComponent(token.token_address)}.jpg)` }}
 						/>
 					</div>
 				</button>
 				<div className='flex flex-col'>
-					<div className='text-lg truncate max-w-[120px]'>{token.token_name}</div>
-					<div className='text-base truncate text-neutral-100 dark:text-neutral-200 max-w-[80px]'>
+					<div className='text-lg truncate w-fit max-w-[120px]'>{token.token_name}</div>
+					<div className='text-base w-fit truncate text-neutral-100 dark:text-neutral-200 max-w-[80px]'>
 						{token.token_symbol}
 					</div>
 				</div>
@@ -48,7 +50,7 @@ function PNL({ token }: PNLProps) {
 						</div>
 					</div>
 				</div>
-				<div className='text-textSecondary text-14 font-semibold '>
+				<div className='w-fit font-semibold'>
 					{token.roi_percentage.toFixed(2)}%
 				</div>
 			</div>
