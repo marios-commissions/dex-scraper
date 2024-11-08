@@ -1,5 +1,5 @@
+import { addWallet, getAggregatedWalletPNL, getWalletPNL } from '~/data';
 import { type WebSocket, WebSocketServer } from 'ws';
-import { addWallet, getWalletPNL } from '~/data';
 import { DispatchTypes } from '~/constants';
 import config from '~/../config.json';
 import { scrape } from '~/scraper';
@@ -19,8 +19,12 @@ ws.on('connection', (socket: WebSocket) => {
 					onRequestScraping(socket, payload.uuid, payload.address, payload.addressType);
 				} break;
 
-				case DispatchTypes.REQUEST_ADDRESS_DATA: {
-					onRequestAddressData(socket, payload.uuid, payload.address);
+				case DispatchTypes.REQUEST_PNL: {
+					onRequestPNL(socket, payload.uuid, payload.address);
+				} break;
+
+				case DispatchTypes.REQUEST_AGGREGATED_PNL: {
+					onRequestAggregatedPNL(socket, payload.uuid, payload.address);
 				} break;
 
 				case DispatchTypes.ADD_WALLETS: {
@@ -53,11 +57,22 @@ async function onRequestScraping(socket: WebSocket, uuid: string, address: strin
 	});
 }
 
-async function onRequestAddressData(socket: WebSocket, uuid: string, address: string) {
+async function onRequestAggregatedPNL(socket: WebSocket, uuid: string, address: string) {
+	const data = await getAggregatedWalletPNL(address);
+
+	send(socket, {
+		type: DispatchTypes.REQUEST_AGGREGATED_PNL_RESPONSE,
+		uuid,
+		address,
+		data
+	});
+}
+
+async function onRequestPNL(socket: WebSocket, uuid: string, address: string) {
 	const data = await getWalletPNL(address);
 
 	send(socket, {
-		type: DispatchTypes.ADDRESS_DATA_RESPONSE,
+		type: DispatchTypes.REQUEST_PNL_RESPONSE,
 		uuid,
 		address,
 		data

@@ -51,7 +51,7 @@ function PNL({ token }: PNLProps) {
 					</div>
 				</div>
 				<div className='w-fit font-semibold'>
-					{token.roi_percentage.toFixed(2)}%
+					{token.roi_percentage?.toFixed(2)}%
 				</div>
 			</div>
 			<div className='ml-auto'>

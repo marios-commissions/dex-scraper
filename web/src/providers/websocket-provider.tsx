@@ -26,7 +26,24 @@ export interface Token {
 	is_honeypot: boolean;
 }
 
-interface AddressDataResponse {
+export interface AggregatedPNLResponse {
+	success: boolean;
+	error?: string;
+	data?: {
+		wallet: string,
+		realized_pnl_usd: number;
+		realized_roi_percentage: number;
+		tokens_traded: number;
+		unrealized_pnl_usd: number;
+		unrealized_roi_percentage: number;
+		winrate: number;
+		average_holding_time: number;
+		combined_pnl_usd: number;
+		combined_roi_percentage: number;
+	};
+}
+
+export interface PNLResponse {
 	success: boolean;
 	error?: string;
 	data?: { items: Token[]; };
@@ -83,7 +100,8 @@ type DataProviderState = {
 	emit: (type: DispatchTypes, payload: any) => void;
 	addWallets: (fromCoin: string, wallets: string[], onProgress: null | ((data: AddWalletsResponse['data']) => any), throwError?: boolean) => Promise<AddWalletsResponse | null>;
 	requestScraping: (address: string, type: keyof typeof AddressRegex, throwError?: boolean) => Promise<ScrapeResponse | null>;
-	requestAddressData: (address: string, throwError?: boolean) => Promise<AddressDataResponse | null>;
+	requestPNL: (address: string, throwError?: boolean) => Promise<PNLResponse | null>;
+	requestAggregatedPNL: (address: string, throwError?: boolean) => Promise<AggregatedPNLResponse | null>;
 	on: (type: DispatchTypes, callback: (...args: any[]) => any) => void;
 	once: (type: DispatchTypes, callback: (...args: any[]) => any) => void;
 	off: (type: DispatchTypes, callback: (...args: any[]) => any) => void;
@@ -97,7 +115,8 @@ const initial = {
 	emit: () => void 0,
 	addWallets: (): Promise<AddWalletsResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
 	requestScraping: (): Promise<ScrapeResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
-	requestAddressData: (): Promise<AddressDataResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
+	requestPNL: (): Promise<PNLResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
+	requestAggregatedPNL: (): Promise<AggregatedPNLResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
 	waitForDispatch: (): Promise<unknown> => Promise.resolve(),
 	on: () => void 0,
 	once: () => void 0,
@@ -197,17 +216,17 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 		return dispatch.data as ScrapeResponse;
 	}, [ws]);
 
-	const requestAddressData = useCallback(async (address: string, throwError: boolean = false): Promise<AddressDataResponse | null> => {
+	const requestPNL = useCallback(async (address: string, throwError: boolean = false): Promise<PNLResponse | null> => {
 		if (!ws.current) return { success: false, error: 'Not connected.' };
 
-		const uuid = createEncodedUUID(DispatchTypes.REQUEST_ADDRESS_DATA, address);
+		const uuid = createEncodedUUID(DispatchTypes.REQUEST_PNL, address);
 		if (pendingRequests.has(uuid)) return null;
 
-		send({ type: DispatchTypes.REQUEST_ADDRESS_DATA, uuid, address });
+		send({ type: DispatchTypes.REQUEST_PNL, uuid, address });
 
 		pendingRequests.add(uuid);
 
-		const dispatch = await waitForDispatch(DispatchTypes.ADDRESS_DATA_RESPONSE, (dispatch) => dispatch.uuid === uuid && dispatch.address === address);
+		const dispatch = await waitForDispatch(DispatchTypes.REQUEST_PNL_RESPONSE, (dispatch) => dispatch.uuid === uuid && dispatch.address === address);
 
 		pendingRequests.delete(uuid);
 
@@ -215,8 +234,28 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 			throw new Error(dispatch.data.error);
 		}
 
-		console.log(dispatch.data);
-		return dispatch.data as AddressDataResponse;
+		return dispatch.data as PNLResponse;
+	}, [ws]);
+
+	const requestAggregatedPNL = useCallback(async (address: string, throwError: boolean = false): Promise<AggregatedPNLResponse | null> => {
+		if (!ws.current) return { success: false, error: 'Not connected.' };
+
+		const uuid = createEncodedUUID(DispatchTypes.REQUEST_AGGREGATED_PNL, address);
+		if (pendingRequests.has(uuid)) return null;
+
+		send({ type: DispatchTypes.REQUEST_AGGREGATED_PNL, uuid, address });
+
+		pendingRequests.add(uuid);
+
+		const dispatch = await waitForDispatch(DispatchTypes.REQUEST_AGGREGATED_PNL_RESPONSE, (dispatch) => dispatch.uuid === uuid && dispatch.address === address);
+
+		pendingRequests.delete(uuid);
+
+		if (throwError && dispatch.data.error) {
+			throw new Error(dispatch.data.error);
+		}
+
+		return dispatch.data as AggregatedPNLResponse;
 	}, [ws]);
 
 	const addWallets = useCallback(async (fromCoin: string, wallets: string[], onProgress: null | ((data: AddWalletsResponse['data']) => any), throwError?: boolean): Promise<AddWalletsResponse | null> => {
@@ -261,7 +300,8 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 		send,
 		emit,
 		requestScraping,
-		requestAddressData,
+		requestPNL,
+		requestAggregatedPNL,
 		addWallets,
 
 		get ws() {

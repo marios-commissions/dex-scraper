@@ -2,59 +2,112 @@ import { create } from 'zustand';
 
 
 interface CacheStore {
-	results: Map<string, CacheEntry>;
-	fetchAndCache: <T extends (...args: any) => any = (...args: any) => any>(
+	results: Map<string, {
+		promise: Promise<any>;
+		data: any;
+		timestamp: number;
+		error?: Error;
+	}>;
+
+	fetch: <T extends (...args: any[]) => any>(
 		key: string,
 		fetcher: T,
+		options?: {
+			ttl?: number;
+			force?: boolean;
+		},
 		...args: Parameters<T>
 	) => Promise<ReturnType<T>>;
 }
 
-interface CacheEntry {
-	completed: Promise<any>;
-	data: any;
-}
+const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 
 const useCache = create<CacheStore>((set, get) => ({
 	results: new Map(),
-	async fetchAndCache<T extends (...args: any) => any = (...args: any) => any>(
+
+	fetch: async <T extends (...args: any[]) => any>(
 		key: string,
 		fetcher: T,
+		options?: {
+			ttl?: number;
+			force?: boolean;
+		},
 		...args: Parameters<T>
-	): Promise<ReturnType<T>> {
-		const current = get();
-		const entry = current.results.get(key);
+	): Promise<ReturnType<T>> => {
+		const { results: cache } = get();
+		const ttl = options?.ttl ?? DEFAULT_TTL;
 
-		if (entry && await entry.completed) {
-			return entry.data;
+		// Check if we have a valid cached entry
+		const cached = cache.get(key);
+		const now = Date.now();
+
+		if (cached && !options?.force) {
+			// If the entry hasn't expired, return it
+			if (now - cached.timestamp < ttl) {
+				// If it errored before, throw the error
+				if (cached.error) {
+					throw cached.error;
+				}
+
+				// If we have data, return it
+				if (cached.data !== undefined) {
+					return cached.data;
+				}
+
+				// If we're still fetching, return the promise
+				return cached.promise;
+			}
 		}
 
-		// Create a new entry in the cache
-		const newResults = new Map(current.results);
-		newResults.set(key, {
-			completed: new Promise(() => null),
-			data: null,
+		let promiseResolve: (value: T) => void;
+		let promiseReject: (error: Error) => void;
+
+		// Create the promise first
+		const promise = new Promise<T>((resolve, reject) => {
+			promiseResolve = resolve;
+			promiseReject = reject;
 		});
 
-		// Update state with the new results map
-		set({ results: newResults });
+		// Store the pending promise immediately
+		const newCache = new Map(cache);
+		newCache.set(key, {
+			promise,
+			data: undefined,
+			timestamp: now,
+		});
+		set({ results: newCache });
 
-		try {
-			const data = await fetcher(...args);
+		// Start the fetch
+		const data = fetcher(...args).then(
+			(data: T) => {
+				// Update the cache with the new data
+				const newCache = new Map(get().results);
+				newCache.set(key, {
+					promise,
+					data,
+					timestamp: now,
+				});
 
-			// Update the cache with the fetched data
-			newResults.set(key, { completed: Promise.resolve(), data });
-			set({ results: newResults }); // Trigger a re-render here
+				set({ results: newCache });
+				promiseResolve(data);
+				return data;
+			},
+			(error: Error) => {
+				// Store the error in cache
+				const newCache = new Map(get().results);
+				newCache.set(key, {
+					promise,
+					data: undefined,
+					timestamp: now,
+					error: error as Error,
+				});
+				set({ results: newCache });
+				promiseReject(error);
+				throw error;
+			}
+		);
 
-			return data;
-		} catch (error) {
-			// Remove failed entry from cache
-			newResults.delete(key);
-			set({ results: newResults });
-
-			// Re-throw the error to maintain the Promise rejection chain
-			throw error;
-		}
+		return data;
 	},
 }));
 

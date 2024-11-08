@@ -37,6 +37,39 @@ export async function getWalletPNL(wallet: string) {
 	}
 }
 
+export async function getAggregatedWalletPNL(wallet: string) {
+	try {
+		const response = await fetch(CieloBaseURL + `${wallet}/pnl/total-stats?timeframe=${config.cielo.timeframe}`, {
+			headers: {
+				'X-Api-Key': credentials.cieloApiKey
+			}
+		});
+
+		if (response.status === 429) {
+			const rateLimitReset = response.headers.get('X-Rate-Limit-Reset');
+			const delay = Number(rateLimitReset) - Date.now();
+
+			console.log(`Ratelimit hit while fetching aggregated PNL for ${wallet}, waiting ${delay}ms.`);
+			await sleep(delay);
+
+			return getAggregatedWalletPNL(wallet);
+		}
+
+		const json = await response.json();
+
+		if (response.status === 200 && json.data) {
+			return { success: true, data: json.data };
+		}
+
+		return {
+			success: false,
+			error: `Got unexpected status ${response.status}. Body: ${JSON.stringify(json, null, 2)}`
+		};
+	} catch (error) {
+		return { success: false, error: error.message };
+	}
+}
+
 export async function addWallet(wallet: string, label: string) {
 	try {
 		const response = await fetch(CieloBaseURL + 'tracked-wallets', {

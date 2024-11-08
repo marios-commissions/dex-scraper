@@ -25,6 +25,12 @@ interface Data {
 }
 
 function Stats() {
+	const savedMinMultiplierQuantity = localStorage.getItem('minimumMultiplierQuantity');
+	const savedMinMultiplier = localStorage.getItem('minimumMultiplier');
+
+
+	const [minimumMultiplierQuantity, setMinimumMultiplierQuantity] = useState<number | null>(Number.isNaN(savedMinMultiplierQuantity) ? null : Number(savedMinMultiplierQuantity));
+	const [minimumMultiplier, setMinimumMultiplier] = useState<number | null>(Number.isNaN(savedMinMultiplier) ? null : Number(savedMinMultiplier));
 	const [results, setResults] = useState<{ data: { wallets: Wallet[], token: string; } | null; }>({ data: null });
 	const [adding, setAdding] = useState<null | { added: number; remaining: number; }>(null);
 	const [added, setAdded] = useState<null | AddWalletsResponseData>(null);
@@ -75,16 +81,51 @@ function Stats() {
 	return <div className='w-full'>
 		<div className='h-0.5 w-full dark:bg-white/5 bg-black/5 my-2' />
 		{results.data?.token && <h3 className='text-3xl font-bold mb-4'>Top Traders for "{results.data?.token}"</h3>}
-		{!results.data?.token && <input
-			className={cn('bg-neutral-800 rounded-md p-2 border-2 mb-2', !label && 'border-red-500')}
-			onChange={(e) => setLabel(e.target.value)}
-			placeholder='Enter Coin Name'
-			type='text'
-			required
-		/>}
+		<div className='flex gap-2 items-center'>
+			{!results.data?.token && <div className='flex flex-col gap-2'>
+				<label htmlFor='coin-name'>Coin Name</label>
+				<input
+					id='coin-name'
+					className={cn('bg-neutral-800 rounded-md p-2 active:outline mb-2', !label && 'border-2 border-red-500')}
+					onChange={(e) => setLabel(e.target.value)}
+					placeholder='Enter Coin Name'
+					type='text'
+					required
+				/>
+			</div>}
+			<div className='flex flex-col gap-2'>
+				<label htmlFor='min-multiplier'>Minimum Multiplier</label>
+				<input
+					id='min-multiplier'
+					className={cn('bg-neutral-800 rounded-md p-2 active:outline mb-2')}
+					onChange={(e) => !Number.isNaN(e.target.value) && setMinimumMultiplier(Number(e.target.value))}
+					value={minimumMultiplier?.toString()}
+					placeholder='Number'
+					type='text'
+					required
+				/>
+			</div>
+			<div className='flex flex-col gap-2'>
+				<label htmlFor='min-multiplier'>Minimum Multiplier Quantity</label>
+				<input
+					id='min-multiplier-quantity'
+					className={cn('bg-neutral-800 rounded-md p-2 active:outline mb-2')}
+					onChange={(e) => !Number.isNaN(e.target.value) && setMinimumMultiplierQuantity(Number(e.target.value))}
+					value={minimumMultiplierQuantity?.toString()}
+					placeholder='Number'
+					type='text'
+					required
+				/>
+			</div>
+		</div>
 		{results?.data?.wallets?.length && <div className='flex flex-col gap-3 items-center justify-center'>
 			{!results.data.wallets?.length && 'No items.'}
-			{!!results.data.wallets?.length && results.data.wallets.map((d, index) => <Accordion index={index} address={d.address} />)}
+			{!!results.data.wallets?.length && results.data.wallets.map((d, index) => <Accordion
+				minimumMultiplier={minimumMultiplier}
+				minimumMultiplierQuantity={minimumMultiplierQuantity}
+				index={index}
+				address={d.address}
+			/>)}
 		</div>}
 		{approved.length !== 0 && results?.data && <button
 			className='w-full px-4 mt-4 py-2 bg-green-500 rounded-lg disabled:opacity-50'
