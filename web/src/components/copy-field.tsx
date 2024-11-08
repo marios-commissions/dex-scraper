@@ -39,13 +39,11 @@ function CopyField(props: CopyFieldProps) {
 		}
 	}, [copied]);
 
-	const content = props.value.slice(0, 3) + '...' + props.value.slice(-3);
-
 	return <div {...props} className='flex items-center gap-2'>
 		<p
 			className='w-auto bg-transparent outline-none font-semibold text-neutral-400'
 		>
-			{content}
+			{props.children}
 		</p>
 		<button className='' onClick={() => !copied && setCopied(true)}>
 			{copied ? <CopyCheck size={16} /> : <CopyIcon size={16} />}

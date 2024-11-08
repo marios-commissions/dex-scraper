@@ -79,7 +79,7 @@ function Accordion(props: AccordionProps) {
 		>
 			<div className='flex gap-2 items-center'>
 				<CopyField onClick={(e) => e.stopPropagation()} value={address}>
-					<b>#{props.index + 1}</b> - {address}
+					<b>#{props.index + 1}</b> - {address.slice(0, 3) + '...' + address.slice(-3)}
 				</CopyField>
 				<button
 					className={cn(
@@ -180,7 +180,7 @@ function AccordionAggregatedPNL(props: AccordionProps) {
 
 	const [data, setData] = useState<AggregatedPNLResponse['data'] | null>(() => {
 		const cached = cache.results.get(props.address + '-aggregated-pnl');
-		return cached?.data;
+		return cached?.data?.data;
 	});
 
 	const [error, setError] = useState<Error | null>(null);
@@ -197,7 +197,6 @@ function AccordionAggregatedPNL(props: AccordionProps) {
 
 			try {
 				const payload = await cache.fetch(props.address + '-aggregated-pnl', requestAggregatedPNL, {}, props.address, true);
-				console.log(payload);
 				if (!payload || payload.error) throw new Error(payload?.error ?? 'Failed to fetch data.');
 
 				const fetchedData = payload.data;
