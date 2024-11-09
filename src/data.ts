@@ -125,6 +125,7 @@ export async function addWallet(wallet: string, label: string) {
 
 		if (response.status === 200 && json.data) {
 			cache.trackedWallets.push(wallet);
+			writeCache();
 			return { success: true, data: json.data };
 		}
 
