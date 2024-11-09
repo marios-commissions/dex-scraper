@@ -95,9 +95,11 @@ type DataProviderProps = {
 
 type DataProviderState = {
 	ws: WebSocket | null;
+	trackedWallets: string[];
 	connected: boolean;
 	send: (data: Record<any, any> | any[]) => void;
 	emit: (type: DispatchTypes, payload: any) => void;
+	refetchTrackedWallets: () => Promise<void>;
 	addWallets: (fromCoin: string, wallets: string[], onProgress: null | ((data: AddWalletsResponse['data']) => any), throwError?: boolean) => Promise<AddWalletsResponse | null>;
 	requestScraping: (address: string, type: keyof typeof AddressRegex, throwError?: boolean) => Promise<ScrapeResponse | null>;
 	requestPNL: (address: string, throwError?: boolean) => Promise<PNLResponse | null>;
@@ -110,9 +112,11 @@ type DataProviderState = {
 
 const initial = {
 	ws: null,
+	trackedWallets: [],
 	connected: false,
 	send: () => void 0,
 	emit: () => void 0,
+	refetchTrackedWallets: () => Promise.resolve(),
 	addWallets: (): Promise<AddWalletsResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
 	requestScraping: (): Promise<ScrapeResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
 	requestPNL: (): Promise<PNLResponse | null> => Promise.resolve({ success: false, error: 'Not initialized.' }),
@@ -131,6 +135,7 @@ const pendingRequests = new Set();
 
 function DataProvider({ children, ...props }: DataProviderProps) {
 	const [connected, setIsConnected] = useState<boolean>(false);
+	const [trackedWallets, setTrackedWallets] = useState([]);
 	const ws = useRef<WebSocket | null>(null);
 
 	const send = useCallback((data: Record<any, any> | any[]) => {
@@ -216,6 +221,21 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 		return dispatch.data as ScrapeResponse;
 	}, [ws]);
 
+	const refetchTrackedWallets = useCallback(async (): Promise<void> => {
+		if (!ws.current) return;
+
+		const uuid = createEncodedUUID(DispatchTypes.REFETCH_TRACKED_WALLETS);
+		if (pendingRequests.has(uuid)) return;
+
+		send({ type: DispatchTypes.REFETCH_TRACKED_WALLETS });
+
+		pendingRequests.add(uuid);
+
+		await waitForDispatch(DispatchTypes.TRACKED_WALLETS_RESPONSE, (dispatch) => dispatch.refetch == true);
+
+		pendingRequests.delete(uuid);
+	}, [ws]);
+
 	const requestPNL = useCallback(async (address: string, throwError: boolean = false): Promise<PNLResponse | null> => {
 		if (!ws.current) return { success: false, error: 'Not connected.' };
 
@@ -291,6 +311,7 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 
 	const ctx = {
 		connected,
+		trackedWallets,
 
 		on,
 		once,
@@ -303,6 +324,7 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 		requestPNL,
 		requestAggregatedPNL,
 		addWallets,
+		refetchTrackedWallets,
 
 		get ws() {
 			return ws.current;
@@ -335,8 +357,15 @@ function DataProvider({ children, ...props }: DataProviderProps) {
 			});
 
 			socket.addEventListener('message', (event) => {
+				console.log(event.data);
 				try {
 					const payload = JSON.parse(event.data);
+
+					console.log(payload);
+					if (payload.type === DispatchTypes.TRACKED_WALLETS_RESPONSE) {
+						console.log(payload);
+						setTrackedWallets(payload.data);
+					}
 
 					emit(payload.type, payload);
 				} catch (e) {

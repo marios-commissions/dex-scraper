@@ -4,6 +4,7 @@
 	"ignore": [
 		"dist",
 		".git",
-		"node_modules"
+		"node_modules",
+		"tracked_wallets.json"
 	]
 }

@@ -1,9 +1,11 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
+import { RefreshCcw } from 'lucide-react';
 
 import { AddressRegex, DispatchTypes } from './constants';
 import useApproval from './hooks/use-approval';
 import useData from './hooks/use-data';
 import Stats from './components/stats';
+import cn from './utilities/cn';
 
 
 interface Wallet {
@@ -25,12 +27,13 @@ type ScrapeResponse = {
 };
 
 function App() {
+	const [isRefetchingTrackedWallets, setIsRefetchingTrackedWallets] = useState<boolean>(false);
 	const [addressType, setAddressType] = useState<keyof typeof AddressRegex | null>(null);
+	const { connected, requestScraping, emit, refetchTrackedWallets } = useData();
 	const [isAddressValid, setIsAddressValid] = useState<boolean | null>(null);
 	const [highlighted, setHighlighted] = useState<boolean>(false);
 	const [isSending, setIsSending] = useState<boolean>(false);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
-	const { connected, requestScraping, emit } = useData();
 	const [address, setAddress] = useState<string>('');
 	const { clear } = useApproval();
 
@@ -58,22 +61,22 @@ function App() {
 		setHighlighted(false);
 
 		const files = e.dataTransfer.files;
-		if (files && files.length > 0 && files[0].type === "text/plain") {
+		if (files && files.length > 0 && files[0].type === 'text/plain') {
 			const file = files[0];
 			parseFile(file);
 		} else {
-			alert("Please upload a .txt file.");
+			alert('Please upload a .txt file.');
 		}
 	};
 
 	const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
 		const files = e.target.files;
-		if (files && files.length > 0 && files[0].type === "text/plain") {
+		if (files && files.length > 0 && files[0].type === 'text/plain') {
 			const file = files[0];
 			clear();
 			parseFile(file);
 		} else {
-			alert("Please upload a .txt file.");
+			alert('Please upload a .txt file.');
 		}
 	};
 
@@ -82,7 +85,7 @@ function App() {
 
 		reader.onload = (e) => {
 			const text = e.target?.result as string;
-			const addresses = text.split("\n").map(line => line.trim()).filter(line => line);
+			const addresses = text.split('\n').map(line => line.trim()).filter(line => line);
 
 			const wallets: Wallet[] = addresses.map(address => ({
 				url: `https://example.com/wallet/${address}`,  // Replace with actual URL pattern
@@ -118,31 +121,45 @@ function App() {
 
 	if (!connected) {
 		return (
-			<div className="dark:bg-stone-950 dark:text-white flex flex-col gap-6 w-full h-full justify-center items-center min-h-dvh">
-				<span className="text-2xl font-semibold">Attempting to connect...</span>
+			<div className='dark:bg-stone-950 dark:text-white flex flex-col gap-6 w-full h-full justify-center items-center min-h-dvh'>
+				<span className='text-2xl font-semibold'>Attempting to connect...</span>
 			</div>
 		);
 	}
 
 	return (
-		<div className="dark:bg-stone-950 p-4 dark:text-white flex flex-col gap-6 w-full h-full justify-center items-center min-h-dvh">
-			<p className="text-4xl font-semibold">Wallet Adder</p>
-			<span className="flex flex-col gap-2 items-center">
+		<div className='dark:bg-stone-950 p-4 dark:text-white flex flex-col gap-3 w-full h-full justify-center items-center min-h-dvh'>
+			<p className='text-4xl font-semibold'>Wallet Adder</p>
+			<button
+				className='flex items-center w-fit hover:bg-black/10 hover:dark:bg-white/10 p-2 gap-2 disabled:opacity-50 rounded-md transition-colors'
+				disabled={isRefetchingTrackedWallets}
+				onClick={async () => {
+					setIsRefetchingTrackedWallets(true);
+
+					await refetchTrackedWallets();
+
+					setIsRefetchingTrackedWallets(false);
+				}}
+			>
+				<RefreshCcw className={cn(isRefetchingTrackedWallets && 'animate-spin')} />
+				<span>{!isRefetchingTrackedWallets ? 'Refetch Tracked Wallets' : 'Refetching Tracked Wallets...'}</span>
+			</button>
+			<span className='flex flex-col gap-2 items-center'>
 				{address !== '' && isAddressValid === false && (
-					<span className="dark:text-red-400 text-red-500">Invalid Address!</span>
+					<span className='dark:text-red-400 text-red-500'>Invalid Address!</span>
 				)}
 				{address !== '' && addressType && (
-					<span className="dark:text-green-400 text-green-500">
+					<span className='dark:text-green-400 text-green-500'>
 						Detected Address Type: {addressType!}
 					</span>
 				)}
 			</span>
 			<input
-				className="rounded-md border-2 placeholder:dark:text-stone-500 w-96 py-2 dark:bg-stone-900 dark:border-stone-800 dark:text-white px-4"
-				placeholder="Coin Address"
+				className='rounded-md border-2 placeholder:dark:text-stone-500 w-96 py-2 dark:bg-stone-900 dark:border-stone-800 dark:text-white px-4'
+				placeholder='Coin Address'
 				value={address}
 				disabled={isSending}
-				id="address"
+				id='address'
 				onChange={(event: ChangeEvent<HTMLInputElement>) => {
 					const value = event.target.value;
 					setAddress(value);
@@ -174,16 +191,16 @@ function App() {
 				onDrop={handleDrop}
 				onClick={() => fileInputRef.current?.click()}
 			>
-				<label className="w-full h-full flex items-center justify-center cursor-pointer">
+				<label className='w-full h-full flex items-center justify-center cursor-pointer'>
 					<p>Drag & drop files here or click to upload</p>
 				</label>
 				<input
 					tabIndex={0}
 					ref={fileInputRef}
-					id="file-upload"
-					type="file"
-					accept=".txt"
-					className="hidden"
+					id='file-upload'
+					type='file'
+					accept='.txt'
+					className='hidden'
 					onChange={handleFileSelect}
 				/>
 			</button>

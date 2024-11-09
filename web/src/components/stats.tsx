@@ -34,9 +34,9 @@ function Stats() {
 	const [results, setResults] = useState<{ data: { wallets: Wallet[], token: string; } | null; }>({ data: null });
 	const [adding, setAdding] = useState<null | { added: number; remaining: number; }>(null);
 	const [added, setAdded] = useState<null | AddWalletsResponseData>(null);
+	const { on, off, addWallets, trackedWallets } = useData();
 	const [error, setError] = useState<Error | null>(null);
 	const [label, setLabel] = useState<string>('');
-	const { on, off, addWallets } = useData();
 	const { approved } = useApproval();
 
 	useEffect(() => {
@@ -77,6 +77,7 @@ function Stats() {
 
 	if (!results.data) return null;
 
+	console.log(trackedWallets);
 
 	return <div className='w-full'>
 		<div className='h-0.5 w-full dark:bg-white/5 bg-black/5 my-2' />
@@ -120,7 +121,7 @@ function Stats() {
 		</div>
 		{results?.data?.wallets?.length && <div className='flex flex-col gap-3 items-center justify-center'>
 			{!results.data.wallets?.length && 'No items.'}
-			{!!results.data.wallets?.length && results.data.wallets.map((d, index) => <Accordion
+			{!!results.data.wallets?.length && results.data.wallets.map((d, index) => !trackedWallets.includes(d.address) && <Accordion
 				minimumMultiplier={minimumMultiplier}
 				minimumMultiplierQuantity={minimumMultiplierQuantity}
 				index={index}

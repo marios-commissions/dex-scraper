@@ -28,7 +28,6 @@ function Accordion(props: AccordionProps) {
 
 	// Check if we have enough trades meeting the ROI threshold
 	const shouldRender = useMemo(() => {
-
 		const cacheKey = `${props.address}-pnl`;
 		const cachedData = cache.results.get(cacheKey);
 
