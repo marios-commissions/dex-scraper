@@ -3,7 +3,7 @@ import { createServer } from 'vite';
 
 const server = await createServer({
 	server: {
-		host: true
+		host: '0.0.0.0'
 	}
 });
 
