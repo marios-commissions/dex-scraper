@@ -1,4 +1,7 @@
 module.exports = {
-	name: 'dex-scraper', // Name of your application
-	script: 'dist/index.js', // Entry point of your application
+	apps: [
+		{ name: 'dex-scraper', script: 'dist/index.js' },
+		{ name: 'dex-scraper-cloud', script: 'start-cloud.sh' },
+		{ name: 'dex-scraper-web', script: 'web/serve.js' },
+	]
 };
