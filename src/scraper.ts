@@ -34,7 +34,7 @@ const waitForXPath = async (browser: Hero, selector: string, maxWaitTime = 10000
 
 export async function scrape(address: string, addressType: string) {
 	const browser = new Hero({
-		showChrome: true,
+		showChrome: false,
 		disableMitm: true,
 		noChromeSandbox: true,
 		mode: 'production',
