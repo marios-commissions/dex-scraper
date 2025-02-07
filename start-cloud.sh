@@ -1,2 +1,2 @@
 #!/usr/bin/bash
-pnpm dlx @ulixee/cloud start
+pnpm dlx @ulixee/cloud@latest start
